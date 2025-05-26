@@ -1,0 +1,16 @@
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\Main.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\model\ChatMessage.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\model\Product.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\model\Review.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\service\ChatbotService.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\service\GeminiService.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\service\ProductClient.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\service\ProductService.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\ui\common\LabelFactory.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\ui\components\ChatbotPanelFactory.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\ui\components\ChatBubbleFactory.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\ui\components\HeroSectionFactory.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\ui\components\NavBarFactory.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\ui\components\ProductCardFactory.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\ui\components\SearchFormFactory.java
+C:\Users\ThinkPad\Downloads\test\UI-main\UI-main\src\main\java\application\ui\layout\ProductGridFactory.java

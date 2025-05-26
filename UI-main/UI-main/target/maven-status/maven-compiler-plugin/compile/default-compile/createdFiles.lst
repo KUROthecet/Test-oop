@@ -1,0 +1,5 @@
+application\service\ChatbotService.class
+application\service\GeminiService.class
+application\ui\components\ChatBubbleFactory.class
+application\ui\components\ChatbotPanelFactory.class
+application\model\ChatMessage.class
