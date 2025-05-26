@@ -4,15 +4,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 public class GeminiService {
-    private static final String API_KEY = "AIzaSyCOmuIjXZN--2VqFpbpiX1sKPKeL3U6fuk"; // Thay bằng API key thực của bạn
-    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
+    // Thay bằng API key thật của bạn (không để placeholder cũ nữa)
+    private static final String API_KEY = "AIzaSyCOmuIjXZN--2VqFpbpiX1sKPKeL3U6fuk";
+
+    // Endpoint không kèm ?key=
+    private static final String GEMINI_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
     private final ObjectMapper objectMapper;
 
@@ -22,93 +27,121 @@ public class GeminiService {
 
     public String generateResponse(String userMessage, String productContext) {
         try {
-            // Tạo prompt với context về sản phẩm
+            // Chỉ kiểm tra NULL / empty
+            if (API_KEY == null || API_KEY.isBlank()) {
+                return "⚠️ Chưa cấu hình API key cho Gemini. Vui lòng liên hệ quản trị viên.";
+            }
+
+            // Xây prompt như cũ
             String prompt = createPrompt(userMessage, productContext);
 
-            // Tạo request body
+            // Tạo JSON body
             ObjectNode requestBody = objectMapper.createObjectNode();
             ObjectNode content = objectMapper.createObjectNode();
             ObjectNode part = objectMapper.createObjectNode();
-
             part.put("text", prompt);
             content.set("parts", objectMapper.createArrayNode().add(part));
             requestBody.set("contents", objectMapper.createArrayNode().add(content));
 
-            // Gửi request
-            String response = sendPostRequest(requestBody.toString());
+            // Safety settings (giữ nguyên)
+            ObjectNode safety = objectMapper.createObjectNode();
+            safety.put("category", "HARM_CATEGORY_HARASSMENT");
+            safety.put("threshold", "BLOCK_NONE");
+            requestBody.set("safetySettings", objectMapper.createArrayNode().add(safety));
 
-            // Parse response
-            return parseGeminiResponse(response);
+            // Generation config (giữ nguyên)
+            ObjectNode genConfig = objectMapper.createObjectNode();
+            genConfig.put("temperature", 0.7);
+            genConfig.put("topP", 0.8);
+            genConfig.put("topK", 40);
+            genConfig.put("maxOutputTokens", 1024);
+            requestBody.set("generationConfig", genConfig);
+
+            // Gửi request
+            String raw = sendPostRequest(requestBody.toString());
+            return parseGeminiResponse(raw);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return "Xin lỗi, tôi không thể trả lời câu hỏi này lúc này. Vui lòng thử lại sau.";
+            return "❌ Xin lỗi, tôi không thể trả lời lúc này. Lỗi: "
+                    + e.getMessage();
         }
     }
 
     private String createPrompt(String userMessage, String productContext) {
         return String.format(
-                "Bạn là trợ lý bán hàng máy tính của Seventeen's Store. " +
-                        "Hãy trả lời câu hỏi của khách hàng một cách thân thiện và chuyên nghiệp. " +
-                        "Chỉ sử dụng thông tin từ dữ liệu sản phẩm được cung cấp.\n\n" +
-                        "Dữ liệu sản phẩm:\n%s\n\n" +
-                        "Câu hỏi của khách hàng: %s\n\n" +
-                        "Hãy trả lời ngắn gọn, rõ ràng và hữu ích:",
+                "Bạn là nhân viên tư vấn bán hàng laptop của Seventeen's Store. " +
+                        "Hãy trả lời câu hỏi của khách hàng một cách thân thiện, chuyên nghiệp và hữu ích. " +
+                        "Chỉ sử dụng thông tin từ dữ liệu sản phẩm được cung cấp dưới đây.\n\n" +
+                        "QUY TẮC:\n" +
+                        "- Chỉ dùng dữ liệu sản phẩm\n" +
+                        "- Nếu không biết thì nói không biết\n\n" +
+                        "DỮ LIỆU SẢN PHẨM:\n%s\n\n" +
+                        "CÂU HỎI: %s",
                 productContext, userMessage
         );
     }
 
     private String sendPostRequest(String requestBody) throws Exception {
-        URL url = new URL(GEMINI_URL + "?key=" + URLEncoder.encode(API_KEY, StandardCharsets.UTF_8.name()));
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        // Chỉ nối đúng một lần ?key=
+        String fullUrl = GEMINI_URL + "?key=" + API_KEY;
+        HttpURLConnection conn = (HttpURLConnection) new URL(fullUrl).openConnection();
 
         conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        conn.setRequestProperty("Accept", "application/json");
         conn.setDoOutput(true);
+        conn.setConnectTimeout(15_000);
+        conn.setReadTimeout(30_000);
 
-        // Gửi request body
         try (OutputStream os = conn.getOutputStream()) {
-            byte[] input = requestBody.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
+            byte[] bytes = requestBody.getBytes(StandardCharsets.UTF_8);
+            os.write(bytes);
         }
 
-        // Đọc response
-        int responseCode = conn.getResponseCode();
-        InputStream inputStream = responseCode == 200 ? conn.getInputStream() : conn.getErrorStream();
-
-        StringBuilder response = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                response.append(line);
-            }
+        int code = conn.getResponseCode();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+                code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                StandardCharsets.UTF_8
+        ));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line);
         }
+        reader.close();
 
-        if (responseCode != 200) {
-            throw new Exception("API Error: " + response.toString());
+        if (code != 200) {
+            throw new Exception("Gemini API Error (" + code + "): " + sb);
         }
-
-        return response.toString();
+        return sb.toString();
     }
 
-    private String parseGeminiResponse(String jsonResponse) throws Exception {
-        JsonNode root = objectMapper.readTree(jsonResponse);
-        JsonNode candidates = root.get("candidates");
-
-        if (candidates != null && candidates.isArray() && candidates.size() > 0) {
-            JsonNode firstCandidate = candidates.get(0);
-            JsonNode content = firstCandidate.get("content");
-            if (content != null) {
-                JsonNode parts = content.get("parts");
-                if (parts != null && parts.isArray() && parts.size() > 0) {
-                    JsonNode text = parts.get(0).get("text");
-                    if (text != null) {
-                        return text.asText();
-                    }
-                }
-            }
+    private String parseGeminiResponse(String json) throws Exception {
+        JsonNode root = objectMapper.readTree(json);
+        if (root.has("error")) {
+            String msg = root.get("error").path("message").asText();
+            throw new Exception("Gemini API Error: " + msg);
         }
+        JsonNode cand = root.path("candidates");
+        if (cand.isArray() && cand.size() > 0) {
+            JsonNode first = cand.get(0);
+            if ("SAFETY".equals(first.path("finishReason").asText())) {
+                return "⚠️ Câu hỏi của bạn không phù hợp.";
+            }
+            return first.path("content").path("parts").get(0).path("text")
+                    .asText().trim();
+        }
+        return "❓ Không thể tạo phản hồi phù hợp.";
+    }
 
-        return "Xin lỗi, tôi không thể tạo phản hồi lúc này.";
+    // Test kết nối
+    public boolean testConnection() {
+        try {
+            String r = generateResponse("Test", "Test");
+            return !r.startsWith("⚠️") && !r.startsWith("❌");
+        } catch (Throwable t) {
+            return false;
+        }
     }
 }
