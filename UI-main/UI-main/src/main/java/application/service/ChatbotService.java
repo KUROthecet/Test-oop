@@ -14,7 +14,7 @@ public class ChatbotService {
     private final GeminiService geminiService;
     private final ObjectMapper objectMapper;
     private List<Product> productData;
-    private static final String DATABASE_API_URL = "https://bd68-2405-4802-1f04-d0-b85f-9eac-5a8b-2abb.ngrok-free.app/api/building/";
+    private static final String DATABASE_API_URL = "https://e630-2401-d800-191-ca50-6047-bc96-b047-ee53.ngrok-free.app/api/building/";
 
     public ChatbotService() {
         this.geminiService = new GeminiService();
@@ -112,7 +112,7 @@ public class ChatbotService {
             context.append("Các sản phẩm liên quan:\n\n");
             int count = 0;
             for (Product product : relevantProducts) {
-                if (count >= 10) break; // Giới hạn 10 sản phẩm để không vượt quá token limit
+                if (count >= 348) break; // Giới hạn 348/10 sản phẩm để không vượt quá token limit
                 context.append(formatProductInfo(product)).append("\n\n");
                 count++;
             }
@@ -121,7 +121,7 @@ public class ChatbotService {
             context.append("Danh sách một số sản phẩm có sẵn:\n\n");
             int count = 0;
             for (Product product : productData) {
-                if (count >= 8) break; // Giới hạn 8 sản phẩm
+                if (count >= 348) break; // Giới hạn 8 sản phẩm
                 context.append(formatProductInfo(product)).append("\n\n");
                 count++;
             }

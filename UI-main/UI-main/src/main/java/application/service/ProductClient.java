@@ -14,46 +14,55 @@ import java.util.Map;
 
 public class ProductClient {
 
-    /**
-     * Fetch tất cả sản phẩm (tương đương GET /api/building/)
-     */
+    // GET all
     public static List<Product> fetchProducts() {
         return fetchWithParams(Collections.emptyMap());
     }
 
-    /**
-     * Fetch sản phẩm với query params (tương đương GET /api/building?brand=...&cpu=...)
-     */
-    public static List<Product> fetchWithParams(Map<String,String> params) {
+    // GET with params
+    public static List<Product> fetchWithParams(Map<String, String> params) {
         try {
-            // Xây dựng URL
-        	StringBuilder sb = new StringBuilder("https://bd68-2405-4802-1f04-d0-b85f-9eac-5a8b-2abb.ngrok-free.app/api/building/");
+            // 🔧 Build URL
+            StringBuilder sb = new StringBuilder("https://e630-2401-d800-191-ca50-6047-bc96-b047-ee53.ngrok-free.app/api/building/");
             if (params != null && !params.isEmpty()) {
                 sb.append("?");
-                for (Map.Entry<String,String> e : params.entrySet()) {
+                for (Map.Entry<String, String> e : params.entrySet()) {
                     sb.append(URLEncoder.encode(e.getKey(), "UTF-8"))
-                      .append("=")
-                      .append(URLEncoder.encode(e.getValue(), "UTF-8"))
-                      .append("&");
+                            .append("=")
+                            .append(URLEncoder.encode(e.getValue(), "UTF-8"))
+                            .append("&");
                 }
-                // bỏ dấu & cuối cùng
-                sb.deleteCharAt(sb.length() - 1);
+                sb.deleteCharAt(sb.length() - 1); // remove last &
             }
 
-            // Mở kết nối
+            // 🌐 Open connection
             URL url = new URL(sb.toString());
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
 
-            // Đọc JSON về và chuyển thành List<Product>
-         // Đọc JSON về và chuyển thành List<Product>
+            // ⏱ Set timeout to speed up or prevent freezing
+            conn.setConnectTimeout(3000); // 3s timeout
+            conn.setReadTimeout(5000);    // 5s read timeout
+
+            // 📥 Read response
             try (InputStream in = conn.getInputStream()) {
                 ObjectMapper mapper = new ObjectMapper();
                 List<Product> all = mapper.readValue(in, new TypeReference<List<Product>>() {});
-                return all.size() > 10 ? all.subList(0, 10) : all;
+
+                // 📢 Print all products
+                System.out.println("📦 Đã tải " + all.size() + " sản phẩm:");
+                for (Product p : all) {
+                    System.out.println("→ " + (p.model != null ? p.model : "No model")
+                            + " | Brand: " + p.brand
+                            + " | CPU: " + p.cpu
+                            + " | Price: " + p.price);
+                }
+
+                return all;
             }
 
         } catch (Exception ex) {
+            System.err.println("❌ Lỗi khi tải sản phẩm:");
             ex.printStackTrace();
             return Collections.emptyList();
         }
